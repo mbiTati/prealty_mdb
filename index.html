@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PREALTY — Suite MDB</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #08090e;
+  --s1: #0e1017;
+  --s2: #14161f;
+  --border: #1c1f2e;
+  --gold: #c9a84c;
+  --gold2: #e8c65a;
+  --gold-glow: rgba(201,168,76,0.15);
+  --blue: #4a7fff;
+  --green: #34d399;
+  --purple: #a78bfa;
+  --text: #e8eaf0;
+  --muted: #5c6178;
+  --serif: 'Playfair Display', Georgia, serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Ambient background ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 0%, rgba(201,168,76,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 85% 100%, rgba(74,127,255,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(201,168,76,0.02) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Grain overlay ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 128px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.page { position: relative; z-index: 2; }
+
+/* ── Layout ── */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ── Header ── */
+.hero {
+  padding: 80px 0 60px;
+  text-align: center;
+}
+
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 24px;
+  opacity: 0;
+  animation: fadeUp 0.8s ease forwards;
+}
+
+.hero-title {
+  font-family: var(--serif);
+  font-size: clamp(48px, 8vw, 82px);
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 20px;
+  opacity: 0;
+  animation: fadeUp 0.8s ease 0.15s forwards;
+}
+
+.hero-title .accent {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 50%, var(--gold) 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.hero-sub {
+  font-size: 17px;
+  color: var(--muted);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.7;
+  font-weight: 300;
+  opacity: 0;
+  animation: fadeUp 0.8s ease 0.3s forwards;
+}
+
+.hero-line {
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 40px auto;
+  opacity: 0;
+  animation: fadeUp 0.8s ease 0.4s forwards;
+}
+
+/* ── Cards grid ── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  padding-bottom: 80px;
+}
+
+@media (max-width: 900px) {
+  .cards { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
+  .hero { padding: 50px 0 40px; }
+}
+
+.card {
+  position: relative;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px 32px 36px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  animation: fadeUp 0.7s ease forwards;
+}
+
+.card:nth-child(1) { animation-delay: 0.5s; }
+.card:nth-child(2) { animation-delay: 0.65s; }
+.card:nth-child(3) { animation-delay: 0.8s; }
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(135deg, transparent 30%, var(--gold) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.card:hover::before { opacity: 1; }
+
+.card::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), var(--card-glow, var(--gold-glow)) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+}
+
+.card:hover::after { opacity: 1; }
+
+.card:hover {
+  transform: translateY(-8px);
+  border-color: transparent;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 40px var(--card-glow, var(--gold-glow));
+}
+
+/* Card content */
+.card-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.card-icon {
+  font-size: 36px;
+  margin-bottom: 24px;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition: all 0.3s;
+}
+
+.card:hover .card-icon {
+  border-color: var(--card-accent, var(--gold));
+  background: linear-gradient(135deg, var(--s2), rgba(201,168,76,0.08));
+}
+
+.card-title {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.card-version {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.card-desc {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.65;
+  flex: 1;
+  margin-bottom: 24px;
+  font-weight: 300;
+}
+
+.card-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 28px;
+}
+
+.card-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+
+.card-cta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: var(--card-accent, var(--gold));
+  transition: gap 0.3s;
+}
+
+.card:hover .card-cta { gap: 16px; }
+
+.card-cta i {
+  font-size: 11px;
+  transition: transform 0.3s;
+}
+
+.card:hover .card-cta i { transform: translateX(4px); }
+
+/* Card variants */
+.card--v7 {
+  --card-accent: var(--gold);
+  --card-glow: rgba(201,168,76,0.12);
+}
+
+.card--dvf {
+  --card-accent: var(--blue);
+  --card-glow: rgba(74,127,255,0.12);
+}
+.card--dvf .card-badge { color: var(--blue); }
+.card--dvf .card-badge-dot { background: var(--blue); }
+.card--dvf .card-icon { color: var(--blue); }
+.card--dvf:hover .card-icon { border-color: var(--blue); background: linear-gradient(135deg, var(--s2), rgba(74,127,255,0.08)); }
+
+.card--v6 {
+  --card-accent: var(--purple);
+  --card-glow: rgba(167,139,250,0.12);
+}
+.card--v6 .card-badge { color: var(--purple); }
+.card--v6 .card-badge-dot { background: var(--purple); }
+.card--v6 .card-icon { color: var(--purple); }
+.card--v6:hover .card-icon { border-color: var(--purple); background: linear-gradient(135deg, var(--s2), rgba(167,139,250,0.08)); }
+
+/* ── Footer ── */
+.footer {
+  text-align: center;
+  padding: 40px 0;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--mono);
+  letter-spacing: 1px;
+}
+
+.footer-logo {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--gold);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .container { padding: 0 16px; }
+  .card { padding: 28px 24px; }
+  .hero { padding: 40px 0 30px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="container">
+
+    <section class="hero">
+      <div class="hero-eyebrow">Marchand de Biens · Suite d'outils</div>
+      <h1 class="hero-title">
+        <span class="accent">PREALTY</span>
+      </h1>
+      <p class="hero-sub">
+        Simulateur financier, analyse de marché DVF et outils décisionnels pour les opérations de marchand de biens en France.
+      </p>
+      <div class="hero-line"></div>
+    </section>
+
+    <div class="cards">
+
+      <!-- CARD 1: V7.1 PRO -->
+      <a class="card card--v7" href="prealty_simulateur_v7_1_PRO.html">
+        <div class="card-badge"><span class="card-badge-dot"></span> Production</div>
+        <div class="card-icon"><i class="fas fa-calculator"></i></div>
+        <div class="card-title">Simulateur MDB</div>
+        <div class="card-version">v7.1 PRO — 7 modules</div>
+        <div class="card-desc">
+          Simulateur complet : acquisition, lots, TVA multi-régimes, scénarios auto, base travaux, comparateur, fiscalité IS/IR, échéancier trésorerie et GO/NO GO scoring.
+        </div>
+        <div class="card-features">
+          <span class="card-tag">Simulateur</span>
+          <span class="card-tag">Générateur</span>
+          <span class="card-tag">Base travaux</span>
+          <span class="card-tag">Comparateur</span>
+          <span class="card-tag">Fiscalité</span>
+          <span class="card-tag">Trésorerie</span>
+          <span class="card-tag">DVF</span>
+        </div>
+        <div class="card-cta">Ouvrir le simulateur <i class="fas fa-arrow-right"></i></div>
+      </a>
+
+      <!-- CARD 2: DVF Analyzer -->
+      <a class="card card--dvf" href="dvf_analyzer_v5.html">
+        <div class="card-badge"><span class="card-badge-dot"></span> Analyse marché</div>
+        <div class="card-icon"><i class="fas fa-chart-area"></i></div>
+        <div class="card-title">DVF Analyzer</div>
+        <div class="card-version">v5 — SuPrealty</div>
+        <div class="card-desc">
+          Analyseur de transactions immobilières DVF : plafonds achat/vente, ventilation par commune, section cadastrale, tranches de surface et distributions statistiques.
+        </div>
+        <div class="card-features">
+          <span class="card-tag">CSV Import</span>
+          <span class="card-tag">Plafonds €/m²</span>
+          <span class="card-tag">Par commune</span>
+          <span class="card-tag">Distributions</span>
+          <span class="card-tag">Export JSON</span>
+        </div>
+        <div class="card-cta">Ouvrir l'analyseur <i class="fas fa-arrow-right"></i></div>
+      </a>
+
+      <!-- CARD 3: V6.1 Legacy -->
+      <a class="card card--v6" href="prealty_simulateur_v6_1_TVA.html">
+        <div class="card-badge"><span class="card-badge-dot"></span> Référence</div>
+        <div class="card-icon"><i class="fas fa-code-branch"></i></div>
+        <div class="card-title">Simulateur Legacy</div>
+        <div class="card-version">v6.1 TVA — Version de référence</div>
+        <div class="card-desc">
+          Version stable précédente pour vérification croisée. Mêmes calculs TVA de base, sans les modules avancés. Utile pour valider la cohérence des résultats entre versions.
+        </div>
+        <div class="card-features">
+          <span class="card-tag">Simulateur</span>
+          <span class="card-tag">TVA 3 régimes</span>
+          <span class="card-tag">GO / NO GO</span>
+          <span class="card-tag">Associés</span>
+          <span class="card-tag">Scénarios</span>
+        </div>
+        <div class="card-cta">Ouvrir la v6.1 <i class="fas fa-arrow-right"></i></div>
+      </a>
+
+    </div>
+
+    <footer class="footer">
+      <div class="footer-logo">PREALTY</div>
+      <div>Suite MDB · Marchand de Biens · 2025</div>
+    </footer>
+
+  </div>
+</div>
+
+<script>
+// Mouse glow effect on cards
+document.querySelectorAll('.card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(0);
+    const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(0);
+    card.style.setProperty('--mx', x + '%');
+    card.style.setProperty('--my', y + '%');
+  });
+});
+</script>
+</body>
+</html>
