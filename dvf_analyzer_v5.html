@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DVF Analyzer v5 — SuPrealty</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg:#06080d; --s1:#0d1018; --s2:#131720; --s3:#191e28;
+  --border:#1e2530; --border2:#252d3a;
+  --gold:#d4a843; --gold2:#f0c860;
+  --blue:#4a8fff; --green:#3ecf8e; --red:#ff5757; --purple:#9b72ff;
+  --text:#dce3ef; --muted:#5a6478; --muted2:#3a4255;
+  --mono:'IBM Plex Mono',monospace; --display:'Bebas Neue',sans-serif; --body:'Barlow',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.5;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(74,143,255,.05) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 110%,rgba(212,168,67,.04) 0%,transparent 60%);pointer-events:none;z-index:0;}
+
+/* ── LAYOUT ── */
+.wrap{max-width:1400px;margin:0 auto;padding:32px 24px;position:relative;z-index:1;}
+
+/* ── HEADER ── */
+.hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:36px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+.logo{display:flex;align-items:flex-end;gap:14px;}
+.logo-name{font-family:var(--display);font-size:36px;letter-spacing:2px;color:var(--gold);}
+.logo-sub{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.logo-ver{font-size:9px;color:var(--muted2);letter-spacing:2px;padding:3px 8px;border:1px solid var(--border2);margin-bottom:4px;}
+.hdr-right{text-align:right;font-size:10px;color:var(--muted);}
+
+/* ── DROPZONE ── */
+.drop-area{border:2px dashed var(--border2);border-radius:8px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--s1);margin-bottom:20px;}
+.drop-area:hover,.drop-area.drag{border-color:var(--gold);background:rgba(212,168,67,.05);}
+.drop-title{font-family:var(--display);font-size:28px;letter-spacing:2px;color:var(--gold);margin-bottom:8px;}
+.drop-sub{color:var(--muted);font-size:11px;}
+input[type=file]{display:none;}
+.btn-upload{display:inline-block;margin-top:16px;padding:10px 24px;background:var(--gold);color:#000;font-family:var(--body);font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;border:none;cursor:pointer;border-radius:3px;}
+
+/* ── FILE LIST ── */
+.file-list{display:none;flex-direction:column;gap:6px;margin-bottom:20px;}
+.file-list.vis{display:flex;}
+.file-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--s1);border:1px solid var(--border);border-radius:4px;}
+.file-dot{width:8px;height:8px;border-radius:50%;background:var(--muted2);}
+.file-dot.ok{background:var(--green);}
+.file-name{font-size:11px;flex:1;}
+.file-meta{color:var(--muted);font-size:10px;}
+.file-rm{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 4px;}
+.file-rm:hover{color:var(--red);}
+
+/* ── DEDUPE BANNER ── */
+.dedupe-banner{display:none;padding:10px 16px;background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.2);border-radius:4px;color:var(--green);font-size:11px;margin-bottom:20px;}
+.dedupe-banner.vis{display:block;}
+
+/* ── FILTERS ── */
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;padding:16px;background:var(--s1);border:1px solid var(--border);border-radius:6px;margin-bottom:24px;}
+.flt-group{display:flex;flex-direction:column;gap:4px;}
+.flt-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+.flt-input{background:var(--s2);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 10px;border-radius:3px;outline:none;}
+.flt-input:focus{border-color:var(--gold);}
+select.flt-input{cursor:pointer;}
+.btn-run{padding:8px 20px;background:var(--gold);color:#000;font-family:var(--body);font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;border:none;cursor:pointer;border-radius:3px;align-self:flex-end;}
+.btn-ghost{padding:8px 16px;background:transparent;color:var(--muted);font-family:var(--body);font-weight:600;font-size:11px;letter-spacing:1px;text-transform:uppercase;border:1px solid var(--border2);cursor:pointer;border-radius:3px;align-self:flex-end;}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ── RESULTS ── */
+#results{display:none;}
+#results.vis{display:block;}
+
+/* ── SCOPE ── */
+.scope-bar{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding:12px 16px;background:var(--s1);border:1px solid var(--border);border-radius:4px;}
+.scope-pill{padding:3px 10px;border-radius:20px;font-size:10px;letter-spacing:1px;background:var(--s2);border:1px solid var(--border2);}
+.scope-label{font-size:11px;color:var(--muted);margin-left:auto;}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:2px;margin-bottom:0;border-bottom:1px solid var(--border);}
+.tab{padding:10px 18px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-pane{display:none;padding-top:24px;}
+.tab-pane.active{display:block;}
+
+/* ── SECTION ── */
+.sec{margin-bottom:36px;}
+.sec-head{margin-bottom:16px;}
+.sec-title{font-family:var(--display);font-size:22px;letter-spacing:2px;color:var(--text);}
+.sec-sub{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.6;}
+
+/* ── TOOLTIP SYSTEM ── */
+.tip{display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--s3);border:1px solid var(--border2);color:var(--muted);font-size:8px;text-align:center;line-height:14px;cursor:help;position:relative;margin-left:4px;vertical-align:middle;}
+.tip:hover::after{content:attr(data-tip);position:absolute;bottom:120%;left:50%;transform:translateX(-50%);background:#1a2235;border:1px solid var(--border2);color:var(--text);font-size:10px;line-height:1.5;padding:8px 12px;border-radius:4px;white-space:pre-wrap;width:260px;z-index:100;font-family:var(--body);font-weight:400;pointer-events:none;}
+
+/* ── SUMMARY GRID ── */
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:32px;}
+.sum-card{background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:16px;}
+.sum-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.sum-val{font-family:var(--display);font-size:28px;letter-spacing:1px;}
+.sum-sub{font-size:10px;color:var(--muted);margin-top:4px;}
+.c-gold{color:var(--gold);}
+.c-green{color:var(--green);}
+.c-red{color:var(--red);}
+.c-blue{color:var(--blue);}
+.c-purple{color:var(--purple);}
+
+/* ── TYPE CARDS ── */
+.type-cards{display:flex;flex-direction:column;gap:24px;}
+.type-block{background:var(--s1);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.type-block-hdr{display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--border);border-left:4px solid;}
+.type-block-name{font-family:var(--display);font-size:22px;letter-spacing:2px;}
+.type-block-count{font-size:10px;color:var(--muted);letter-spacing:1px;}
+.type-block-plafonds{margin-left:auto;display:flex;gap:24px;}
+.plf-item{text-align:right;}
+.plf-label{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
+.plf-val{font-family:var(--display);font-size:20px;}
+.plf-margin{font-size:10px;margin-top:2px;}
+
+/* ── TABLE IN TYPE BLOCK ── */
+.type-table{width:100%;border-collapse:collapse;}
+.type-table th{padding:8px 14px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);background:var(--s2);text-align:right;white-space:nowrap;}
+.type-table th:first-child,.type-table th:nth-child(2){text-align:left;}
+.type-table td{padding:10px 14px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;font-size:11px;}
+.type-table td:first-child,.type-table td:nth-child(2){text-align:left;}
+.type-table tr:last-child td{border-bottom:none;}
+.type-table tr:hover td{background:var(--s2);}
+.td-typo{font-family:var(--body);font-weight:700;font-size:13px;}
+.td-tranche{font-size:10px;color:var(--muted);}
+.td-n{font-size:10px;color:var(--muted);}
+.td-achat{font-weight:600;}
+.td-vente{font-weight:600;}
+.td-marge{font-size:10px;font-weight:600;}
+.td-few{color:var(--muted);font-style:italic;font-size:10px;}
+.marge-pos{color:var(--green);}
+.marge-zero{color:var(--muted);}
+.no-data{color:var(--muted);font-style:italic;}
+
+/* ── TABLE WRAP ── */
+.tbl-wrap{overflow-x:auto;}
+table.data-tbl{width:100%;border-collapse:collapse;}
+.data-tbl th{padding:8px 12px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);background:var(--s2);text-align:right;white-space:nowrap;cursor:pointer;}
+.data-tbl th:hover{color:var(--text);}
+.data-tbl th.left,.data-tbl td.left{text-align:left;}
+.data-tbl td{padding:9px 12px;border-bottom:1px solid var(--border);text-align:right;font-size:11px;font-variant-numeric:tabular-nums;}
+.data-tbl tr:hover td{background:var(--s2);}
+.data-tbl tr:last-child td{border-bottom:none;}
+
+/* ── EXPORT ── */
+.exp-block{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:24px;}
+.exp-title{font-family:var(--display);font-size:20px;letter-spacing:2px;margin-bottom:6px;}
+.exp-sub{font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.7;}
+.exp-btns{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.btn-exp{padding:10px 20px;background:var(--s2);border:1px solid var(--border2);color:var(--text);font-family:var(--body);font-weight:600;font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:3px;}
+.btn-exp:hover{border-color:var(--gold);color:var(--gold);}
+.btn-exp.primary{background:var(--gold);color:#000;border-color:var(--gold);}
+pre.json-pre{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:16px;font-size:10px;overflow:auto;max-height:400px;color:var(--green);}
+
+/* ── ZONE TABLE ── */
+.zone-sect{margin-bottom:36px;}
+
+/* ── DISTRIB ── */
+.dist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;}
+.dist-card{background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:16px;}
+.dist-title{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+.hist-wrap{display:flex;align-items:flex-end;gap:2px;height:80px;}
+.hist-bar{flex:1;min-width:4px;border-radius:2px 2px 0 0;transition:all .2s;cursor:default;position:relative;}
+.hist-bar:hover::after{content:attr(data-tip);position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:#1a2235;border:1px solid var(--border2);color:var(--text);font-size:10px;padding:4px 8px;border-radius:3px;white-space:nowrap;z-index:10;}
+.hist-bar.above-plafond{opacity:.4;}
+.hist-axis{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:4px;}
+.dist-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px;}
+.dst{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);}
+.ds-k{color:var(--muted);font-size:10px;}
+.ds-v{font-size:11px;font-variant-numeric:tabular-nums;}
+
+/* ── ANOMALIES ── */
+.anomaly{padding:12px 16px;background:var(--s1);border-left:3px solid;border-radius:0 4px 4px 0;margin-bottom:8px;font-size:11px;}
+.anomaly-title{font-weight:600;margin-bottom:3px;}
+.anomaly-sub{color:var(--muted);font-size:10px;}
+
+/* ── TIMELINE ── */
+.tl-wrap{background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:24px;}
+.tl-title{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.tl-chart{display:flex;align-items:flex-end;gap:3px;height:60px;}
+.tl-bar{flex:1;background:var(--blue);opacity:.6;border-radius:2px 2px 0 0;min-width:4px;transition:all .2s;cursor:default;position:relative;}
+.tl-bar:hover{opacity:1;}
+.tl-bar:hover::after{content:attr(data-tip);position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:#1a2235;border:1px solid var(--border2);color:var(--text);font-size:10px;padding:4px 8px;border-radius:3px;white-space:nowrap;z-index:10;}
+.tl-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:4px;}
+
+/* ── STATUS ── */
+#status{font-size:10px;color:var(--muted);padding:6px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="logo">
+    <div class="logo-name">DVF ANALYZER</div>
+    <div>
+      <div class="logo-sub">SuPrealty · Analyse de marché</div>
+      <div class="logo-ver">v5</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    Données DVF — data.gouv.fr<br>
+    Haut-Savoie · France
+  </div>
+</div>
+
+<!-- DROPZONE -->
+<div class="drop-area" id="dropzone" onclick="document.getElementById('fileInput').click()">
+  <div class="drop-title">Déposer vos fichiers DVF</div>
+  <div class="drop-sub">Format CSV — données de vente immobilière (data.gouv.fr)<br>Plusieurs fichiers acceptés simultanément</div>
+  <button class="btn-upload" onclick="event.stopPropagation();document.getElementById('fileInput').click()">Sélectionner fichiers</button>
+</div>
+<input type="file" id="fileInput" multiple accept=".csv,.txt">
+
+<div class="file-list" id="fileList"></div>
+<div class="dedupe-banner" id="dedupeBanner"></div>
+<div id="status"></div>
+
+<!-- FILTERS -->
+<div class="filters" id="filters" style="display:none">
+  <div class="flt-group">
+    <div class="flt-label">Commune</div>
+    <input class="flt-input" id="fCommune" placeholder="ex: MESSERY" style="width:140px">
+  </div>
+  <div class="flt-group">
+    <div class="flt-label">Type de bien</div>
+    <select class="flt-input" id="fType" style="width:160px">
+      <option value="">Tous les types</option>
+      <option>Maison</option>
+      <option>Appartement</option>
+      <option>Terrain</option>
+      <option>Dépendance</option>
+    </select>
+  </div>
+  <div class="flt-group">
+    <div class="flt-label">Année</div>
+    <select class="flt-input" id="fYear" style="width:100px">
+      <option value="">Toutes</option>
+    </select>
+  </div>
+  <div class="flt-group">
+    <div class="flt-label">Surface min (m²)</div>
+    <input class="flt-input" id="fSmin" type="number" placeholder="0" style="width:90px">
+  </div>
+  <div class="flt-group">
+    <div class="flt-label">Surface max (m²)</div>
+    <input class="flt-input" id="fSmax" type="number" placeholder="∞" style="width:90px">
+  </div>
+  <button class="btn-run" onclick="runAnalysis()">Analyser</button>
+  <button class="btn-ghost" onclick="resetFilters()">Reset</button>
+</div>
+
+<!-- RESULTS -->
+<div id="results">
+
+  <!-- SCOPE BAR -->
+  <div class="scope-bar">
+    <div class="scope-pill" id="pillBiens">— biens</div>
+    <div class="scope-pill" id="pillCommunes">— communes</div>
+    <div class="scope-pill" id="pillYears">— années</div>
+    <div class="scope-label" id="scopeLabel"></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('vue')">Vue d'ensemble</div>
+    <div class="tab" onclick="switchTab('marche')">Marché par type</div>
+    <div class="tab" onclick="switchTab('zones')">Par commune</div>
+    <div class="tab" onclick="switchTab('distrib')">Distributions</div>
+    <div class="tab" onclick="switchTab('export')">Export</div>
+  </div>
+
+  <!-- TAB: VUE D'ENSEMBLE -->
+  <div class="tab-pane active" id="t-vue">
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title">Vue d'ensemble</div>
+        <div class="sec-sub">Résumé global de toutes les transactions après dédoublonnage et agrégation des lots.</div>
+      </div>
+      <div class="sum-grid" id="sumGrid"></div>
+      <div class="tl-wrap">
+        <div class="tl-title">Activité du marché dans le temps</div>
+        <div class="tl-chart" id="tlChart"></div>
+        <div class="tl-labels" id="tlLabels"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: MARCHÉ PAR TYPE -->
+  <div class="tab-pane" id="t-marche">
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title">Marché par type de bien</div>
+        <div class="sec-sub">
+          Chaque bloc = un type de bien. Dans chaque bloc : les lignes croisent <b>Nombre de pièces</b> et <b>Tranche de surface</b>.<br>
+          <b>Plafond achat</b>
+          <span class="tip" data-tip="Prix médian des ventes.&#10;C'est le prix 'du marché courant' :&#10;50% des biens ont été vendus en dessous.&#10;Si vous achetez à ce prix ou moins,&#10;vous êtes dans le marché.">?</span>
+          = médiane — à ne pas dépasser pour acheter dans le marché ·
+          <b>Plafond vente</b>
+          <span class="tip" data-tip="P90 — 90% des ventes ont été faites en dessous.&#10;C'est le prix maximum auquel un bien&#10;a une bonne chance de trouver acheteur.&#10;Au-delà : le marché ne suit plus.">?</span>
+          = P90 — prix max pour vendre avec certitude ·
+          <b>Marge théorique</b>
+          <span class="tip" data-tip="Écart entre plafond vente et plafond achat.&#10;C'est la marge brute potentielle avant travaux.&#10;Ex : acheter à 4 000€/m² et revendre à 5 500€/m²&#10;= 37% de marge brute théorique.">?</span>
+          = écart entre les deux
+        </div>
+      </div>
+      <div class="type-cards" id="typeCards"></div>
+    </div>
+  </div>
+
+  <!-- TAB: PAR COMMUNE -->
+  <div class="tab-pane" id="t-zones">
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title">Analyse par commune</div>
+        <div class="sec-sub">Une ligne par commune. Cliquer sur l'en-tête pour trier.</div>
+      </div>
+      <div class="tbl-wrap">
+        <table class="data-tbl" id="tblZones">
+          <thead>
+            <tr>
+              <th class="left" onclick="sortTbl('commune')">Commune</th>
+              <th onclick="sortTbl('nb')">Nb ventes<span class="tip" data-tip="Nombre de mutations uniques&#10;(pas de lignes — 1 vente = 1 ligne)">?</span></th>
+              <th onclick="sortTbl('med')">€/m² médian<span class="tip" data-tip="La moitié des ventes est en dessous,&#10;l'autre moitié au dessus.">?</span></th>
+              <th onclick="sortTbl('plafAchat')">Plafond achat<span class="tip" data-tip="= médiane €/m²&#10;Prix à ne pas dépasser pour rester&#10;dans le marché courant.">?</span></th>
+              <th onclick="sortTbl('plafVente')">Plafond vente<span class="tip" data-tip="= P90 €/m²&#10;90% des biens vendus en dessous.&#10;Prix max pour vendre avec certitude.">?</span></th>
+              <th onclick="sortTbl('marge')">Marge théo.<span class="tip" data-tip="(Plafond vente - Plafond achat) / Plafond achat&#10;Marge brute potentielle avant travaux.">?</span></th>
+              <th onclick="sortTbl('prixMed')">Prix médian</th>
+              <th onclick="sortTbl('surfMed')">Surface méd.</th>
+            </tr>
+          </thead>
+          <tbody id="bodyZones"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: DISTRIBUTIONS -->
+  <div class="tab-pane" id="t-distrib">
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title">Distributions des prix</div>
+        <div class="sec-sub">Histogramme des prix/m² par type. La barre rouge = plafond vente (P90). Les barres au-delà sont atténuées.</div>
+      </div>
+      <div class="dist-grid" id="distGrid"></div>
+    </div>
+  </div>
+
+  <!-- TAB: EXPORT -->
+  <div class="tab-pane" id="t-export">
+    <div class="exp-block">
+      <div class="exp-title">Export — Fichier propre</div>
+      <div class="exp-sub">
+        <b>CSV Transactions propre</b> — une ligne par bien dans chaque mutation (maison, dépendance, terrain séparés).<br>
+        Les doublons et lots multiples ont été éliminés. Colonnes : id_mutation, date, commune, type, surface_bati, surface_terrain, prix_total, prix_m2, nb_pieces, tranche_surface, tranche_terrain, notes.<br><br>
+        <b>CSV Synthèse marché</b> — une ligne par commune · type · typo · tranche, avec plafond achat et plafond vente.<br><br>
+        <b>JSON Supabase</b> — structuré pour insertion directe dans SuPrealty.
+      </div>
+      <div class="exp-btns">
+        <button class="btn-exp primary" onclick="exportClean()">⬇ CSV Transactions propre</button>
+        <button class="btn-exp" onclick="exportSynthese()">⬇ CSV Synthèse marché</button>
+        <button class="btn-exp" onclick="exportJSON()">⬇ JSON Supabase</button>
+        <button class="btn-exp" onclick="previewJSON()">Aperçu JSON</button>
+      </div>
+      <pre class="json-pre" id="jsonPre" style="display:none"></pre>
+    </div>
+  </div>
+
+</div><!-- /results -->
+</div><!-- /wrap -->
+
+<script>
+// ══════════════════════════════════════════════════════
+// ÉTAT GLOBAL
+// ══════════════════════════════════════════════════════
+const S = {
+  files: [],
+  merged: [],   // après agrégation + dédup
+  filtered: [], // après filtres UI
+  sortCol: 'nb', sortDir: -1,
+};
+
+const SRC_COLORS = ['#4a8fff','#d4a843','#3ecf8e','#ff5757','#9b72ff'];
+
+// ══════════════════════════════════════════════════════
+// TRANCHES SURFACE
+// ══════════════════════════════════════════════════════
+const TRANCHES_BATI = [
+  {max:40,  label:'< 40 m²',       short:'Micro'},
+  {max:60,  label:'40 – 60 m²',    short:'Petit'},
+  {max:80,  label:'60 – 80 m²',    short:'Moyen bas'},
+  {max:100, label:'80 – 100 m²',   short:'Moyen'},
+  {max:130, label:'100 – 130 m²',  short:'Grand'},
+  {max:180, label:'130 – 180 m²',  short:'Très grand'},
+  {max:Infinity, label:'> 180 m²', short:'Exceptionnel'},
+];
+const TRANCHES_TERRAIN = [
+  {max:300,      label:'< 300 m²',         short:'Micro parcelle'},
+  {max:600,      label:'300 – 600 m²',     short:'Petit terrain'},
+  {max:1000,     label:'600 – 1 000 m²',   short:'Standard'},
+  {max:2500,     label:'1 000 – 2 500 m²', short:'Grand terrain'},
+  {max:Infinity, label:'> 2 500 m²',       short:'Très grand'},
+];
+
+function trancheBati(surf) {
+  if (!surf) return null;
+  return TRANCHES_BATI.find(t => surf < t.max) || TRANCHES_BATI[TRANCHES_BATI.length-1];
+}
+function trancheTerrain(surf) {
+  if (!surf) return null;
+  return TRANCHES_TERRAIN.find(t => surf < t.max) || TRANCHES_TERRAIN[TRANCHES_TERRAIN.length-1];
+}
+
+// ══════════════════════════════════════════════════════
+// MAPPING COLONNES DVF
+// ══════════════════════════════════════════════════════
+const CM = {
+  idMut:    ['id_mutation','identifiant_mutation'],
+  date:     ['date_mutation','date_transaction'],
+  nature:   ['nature_mutation'],
+  valeur:   ['valeur_fonciere','valeur_fonciere_totale'],
+  adresseN: ['adresse_numero','numero_voie'],
+  adresseV: ['adresse_nom_voie','nom_voie'],
+  cp:       ['code_postal'],
+  commune:  ['nom_commune','commune','libelle_commune'],
+  dept:     ['code_departement'],
+  section:  ['section_prefixe','section','Section cadastrale'],
+  type:     ['type_local','type_bien'],
+  surface:  ['surface_reelle_bati','surface_bati'],
+  surfTerr: ['surface_terrain'],
+  nbPieces: ['nombre_pieces_principales'],
+};
+
+function fc(row, keys) {
+  const hdrs = Object.keys(row);
+  const norm = s => s.toLowerCase().replace(/\s+/g,'_').replace(/[éèê]/g,'e').replace(/[àâ]/g,'a');
+  for (const k of keys) {
+    const h = hdrs.find(h => norm(h) === norm(k));
+    if (h !== undefined && row[h] != null && row[h] !== '' && row[h] !== 'None' && row[h] !== 'nan') return row[h];
+  }
+  return null;
+}
+
+function num(v) {
+  if (v == null || v === '' || v === 'nan' || v === 'None') return null;
+  const n = parseFloat(String(v).replace(',','.').replace(/\s/g,''));
+  return isNaN(n) ? null : n;
+}
+
+// ══════════════════════════════════════════════════════
+// PARSING CSV
+// ══════════════════════════════════════════════════════
+function parseCSV(txt) {
+  const lines = txt.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
+  if (!lines.length) return [];
+  const sep = lines[0].includes(';') ? ';' : ',';
+  
+  function splitLine(line) {
+    const res=[]; let cur='', inQ=false;
+    for (const ch of line) {
+      if (ch==='"') { inQ=!inQ; }
+      else if (ch===sep && !inQ) { res.push(cur.trim()); cur=''; }
+      else cur+=ch;
+    }
+    res.push(cur.trim());
+    return res;
+  }
+
+  const headers = splitLine(lines[0]).map(h=>h.replace(/"/g,'').trim());
+  return lines.slice(1).map(line => {
+    const vals = splitLine(line);
+    const obj = {};
+    headers.forEach((h,i) => { obj[h] = (vals[i]||'').replace(/"/g,'').trim(); });
+    return obj;
+  }).filter(r => Object.values(r).some(v=>v));
+}
+
+// ══════════════════════════════════════════════════════
+// AGRÉGATION MUTATIONS
+// DVF = 1 ligne par lot dans une mutation.
+// Une maison + 2 dépendances + terrain = 4 lignes avec la même valeur.
+// On groupe par id_mutation, on somme les surfaces par type,
+// et on produit 1 enregistrement par (mutation × type_local).
+// ══════════════════════════════════════════════════════
+function aggregateMutations(rawRows) {
+  const byMut = new Map();
+  rawRows.forEach(r => {
+    const id = r._idMut;
+    if (!id || !r._valeur || r._valeur <= 0 || !r._commune) return;
+    if (!byMut.has(id)) byMut.set(id, []);
+    byMut.get(id).push(r);
+  });
+
+  const out = [];
+  byMut.forEach((lots, idMut) => {
+    const f = lots[0];
+    const valeur = f._valeur;
+    const commune = f._commune;
+    const cp = f._cp || '';
+    const section = f._section || '';
+    const adresse = f._adresse || '';
+    const dateRaw = f._date || '';
+    const nature = f._nature || '';
+    const sourceIdx = f._src;
+
+    // Parse date
+    let year=null, month=null, ym=null;
+    const dm = dateRaw.match(/(\d{4})-(\d{2})-(\d{2})|(\d{2})\/(\d{2})\/(\d{4})/);
+    if (dm) {
+      year = parseInt(dm[1]||dm[6]);
+      month = parseInt(dm[2]||dm[5]);
+      ym = `${year}-${String(month).padStart(2,'0')}`;
+    }
+
+    // Surface terrain totale (répartie sur plusieurs parcelles dans le DVF)
+    const surfTerrTot = lots.reduce((s,l) => s+(l._surfTerr||0), 0) || null;
+
+    // Grouper par type_local
+    const types = {};
+    lots.forEach(l => {
+      const t = l._type || 'Terrain';
+      if (!types[t]) types[t] = {surfBati:0, pieces:0};
+      if (l._surfBati > 0) types[t].surfBati += l._surfBati;
+      if (l._pieces > types[t].pieces) types[t].pieces = l._pieces;
+    });
+
+    Object.entries(types).forEach(([type, agg]) => {
+      const surfBati = agg.surfBati > 0 ? agg.surfBati : null;
+      const pieces = agg.pieces || 0;
+      const isTerrain = type === 'Terrain';
+      const effSurf = isTerrain ? surfTerrTot : surfBati;
+      const pm2 = (valeur && effSurf && effSurf > 0) ? Math.round(valeur/effSurf) : null;
+      const typo = pieces >= 1 ? `T${pieces}` : null;
+      const trB = trancheBati(surfBati);
+      const trT = trancheTerrain(surfTerrTot);
+
+      // Note explicative pour l'export
+      let note = '';
+      if (type === 'Dépendance' && !surfBati) note = 'Surface non dispo DVF';
+      if (type === 'Terrain' && lots.filter(l=>!l._type).length > 1) note = `${lots.filter(l=>!l._type).length} parcelles regroupées`;
+
+      out.push({
+        idMut, sourceIdx,
+        dedupeKey: `${idMut}|${type}`,
+        commune, cp, section, adresse,
+        type, nature, valeur,
+        surfBati, surfTerr: surfTerrTot, effSurf, pm2,
+        pieces, typo,
+        trancheBati: trB, trancheTerrain: trT,
+        year, month, ym, dateRaw, note,
+      });
+    });
+  });
+  return out;
+}
+
+// ══════════════════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════════════════
+function med(a) {
+  if (!a.length) return null;
+  const s=[...a].sort((x,y)=>x-y);
+  const m=Math.floor(s.length/2);
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function avg(a){ return a.length ? a.reduce((s,v)=>s+v,0)/a.length : null; }
+function pct(a,p){
+  if (!a.length) return null;
+  const s=[...a].sort((x,y)=>x-y);
+  return s[Math.min(Math.floor(p/100*s.length), s.length-1)];
+}
+
+// Plafond achat = médiane (prix "du marché" — 50% des ventes en dessous)
+// Plafond vente = P90 (90% des ventes en dessous — prix max pour vendre avec certitude)
+function plafAchat(pm2s) { return med(pm2s); }
+function plafVente(pm2s) { return pct(pm2s, 90); }
+function margeTheo(pa, pv) {
+  if (!pa || !pv || pa <= 0) return null;
+  return Math.round((pv-pa)/pa*100);
+}
+
+function fmt(v, unit='') {
+  if (v == null || isNaN(v)) return '—';
+  const n = Math.round(v);
+  return n.toLocaleString('fr')+' '+unit;
+}
+
+// ══════════════════════════════════════════════════════
+// CHARGEMENT FICHIERS
+// ══════════════════════════════════════════════════════
+document.getElementById('fileInput').addEventListener('change', e => {
+  [...e.target.files].forEach(f => loadFile(f));
+  e.target.value='';
+});
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', ()=>dz.classList.remove('drag'));
+dz.addEventListener('drop', e=>{
+  e.preventDefault(); dz.classList.remove('drag');
+  [...e.dataTransfer.files].forEach(f=>loadFile(f));
+});
+
+function loadFile(file) {
+  const idx = S.files.length;
+  S.files.push({name:file.name, size:file.size, rawCount:0, rows:[], loaded:false});
+  renderFileList();
+  setStatus(`Lecture de ${file.name}…`);
+  const reader = new FileReader();
+  reader.onload = e => {
+    const parsed = parseCSV(e.target.result);
+    // Normaliser les lignes brutes
+    const raw = parsed.map(r => ({
+      _idMut:   fc(r,CM.idMut)||'',
+      _date:    fc(r,CM.date)||'',
+      _nature:  fc(r,CM.nature)||'',
+      _valeur:  num(fc(r,CM.valeur)),
+      _commune: (fc(r,CM.commune)||'').toUpperCase().trim().replace(/\s+/g,' '),
+      _cp:      fc(r,CM.cp)||'',
+      _section: (fc(r,CM.section)||'').toUpperCase().trim(),
+      _adresse: `${fc(r,CM.adresseN)||''} ${fc(r,CM.adresseV)||''}`.trim(),
+      _type:    (fc(r,CM.type)||'').trim(),
+      _surfBati:num(fc(r,CM.surface))||0,
+      _surfTerr:num(fc(r,CM.surfTerr))||0,
+      _pieces:  num(fc(r,CM.nbPieces))||0,
+      _src: idx,
+    }));
+    const agg = aggregateMutations(raw);
+    S.files[idx].rawCount = parsed.length;
+    S.files[idx].rows = agg;
+    S.files[idx].loaded = true;
+    renderFileList();
+    mergeAndAnalyze();
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function removeFile(idx) {
+  S.files.splice(idx,1);
+  S.files.forEach((f,i)=>f.rows.forEach(r=>r.sourceIdx=i));
+  renderFileList();
+  if (S.files.some(f=>f.loaded)) mergeAndAnalyze();
+  else document.getElementById('results').style.display='none';
+}
+
+function renderFileList() {
+  const fl = document.getElementById('fileList');
+  fl.innerHTML = S.files.map((f,i) => `
+    <div class="file-item">
+      <div class="file-dot ${f.loaded?'ok':''}"></div>
+      <div class="file-name">${f.name}</div>
+      <div class="file-meta">${(f.size/1024).toFixed(0)} KB
+        ${f.loaded ? ` · ${f.rawCount} lignes brutes → ${f.rows.length} biens agrégés` : ''}
+      </div>
+      <button class="file-rm" onclick="removeFile(${i})">✕</button>
+    </div>`).join('');
+  fl.classList.toggle('vis', S.files.length>0);
+}
+
+function mergeAndAnalyze() {
+  const loaded = S.files.filter(f=>f.loaded);
+  const all = loaded.flatMap(f=>f.rows);
+  const totalRaw = loaded.reduce((s,f)=>s+f.rawCount,0);
+
+  // Déduplication inter-fichiers
+  const seen = new Set();
+  S.merged = all.filter(r => {
+    if (seen.has(r.dedupeKey)) return false;
+    seen.add(r.dedupeKey); return true;
+  });
+
+  const elim = totalRaw - S.merged.length;
+  const banner = document.getElementById('dedupeBanner');
+  banner.innerHTML = `✓ <b>${totalRaw.toLocaleString('fr')} lignes brutes</b> → <b>${S.merged.length.toLocaleString('fr')} biens uniques</b> après agrégation des lots multiples et suppression des doublons inter-fichiers (<b>${elim.toLocaleString('fr')} lignes éliminées</b>)`;
+  banner.classList.add('vis');
+
+  // Populate year filter
+  const years = [...new Set(S.merged.map(r=>r.year).filter(Boolean))].sort((a,b)=>b-a);
+  const ys = document.getElementById('fYear');
+  ys.innerHTML = '<option value="">Toutes</option>' + years.map(y=>`<option>${y}</option>`).join('');
+
+  document.getElementById('filters').style.display='flex';
+  setStatus(`${S.merged.length.toLocaleString('fr')} biens chargés — source: ${totalRaw.toLocaleString('fr')} lignes DVF`);
+  runAnalysis();
+}
+
+// ══════════════════════════════════════════════════════
+// FILTRES & ANALYSE
+// ══════════════════════════════════════════════════════
+function resetFilters() {
+  ['fCommune','fSmin','fSmax'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fType').value='';
+  document.getElementById('fYear').value='';
+  runAnalysis();
+}
+
+function runAnalysis() {
+  if (!S.merged.length) return;
+  const commune = document.getElementById('fCommune').value.toUpperCase().trim();
+  const type    = document.getElementById('fType').value;
+  const year    = document.getElementById('fYear').value;
+  const smin    = parseFloat(document.getElementById('fSmin').value)||null;
+  const smax    = parseFloat(document.getElementById('fSmax').value)||null;
+
+  S.filtered = S.merged.filter(r => {
+    if (commune && !r.commune.includes(commune)) return false;
+    if (type && r.type !== type) return false;
+    if (year && String(r.year) !== year) return false;
+    if (smin && r.effSurf < smin) return false;
+    if (smax && r.effSurf > smax) return false;
+    return true;
+  });
+
+  setStatus(`${S.filtered.length.toLocaleString('fr')} biens correspondant aux filtres`);
+  renderAll();
+  document.getElementById('results').style.display='block';
+}
+
+// ══════════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const ids=['vue','marche','zones','distrib','export'];
+    t.classList.toggle('active', ids[i]===id);
+  });
+  document.querySelectorAll('.tab-pane').forEach(p=>{
+    p.classList.toggle('active', p.id===`t-${id}`);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER ALL
+// ══════════════════════════════════════════════════════
+function renderAll() {
+  const rows = S.filtered;
+  const pm2all = rows.map(r=>r.pm2).filter(Boolean);
+  const prix = rows.map(r=>r.valeur).filter(Boolean);
+  const surfs = rows.map(r=>r.effSurf).filter(Boolean);
+  const communes = [...new Set(rows.map(r=>r.commune).filter(Boolean))];
+  const years = [...new Set(rows.map(r=>r.year).filter(Boolean))].sort();
+
+  // Scope pills
+  document.getElementById('pillBiens').textContent = `${rows.length.toLocaleString('fr')} biens`;
+  document.getElementById('pillCommunes').textContent = `${communes.length} commune${communes.length>1?'s':''}`;
+  document.getElementById('pillYears').textContent = years.length ? `${years[0]}${years.length>1?'–'+years[years.length-1]:''}` : '—';
+  document.getElementById('scopeLabel').textContent = communes.slice(0,5).join(' · ') + (communes.length>5?` +${communes.length-5}`:'');
+
+  // Summary
+  const pa = plafAchat(pm2all), pv = plafVente(pm2all), mg = margeTheo(pa,pv);
+  document.getElementById('sumGrid').innerHTML = [
+    {l:'Biens analysés',       v:rows.length.toLocaleString('fr'),   s:'après dédoublonnage', tip:'Nombre de biens uniques après agrégation des lots multiples dans chaque acte de vente.', c:''},
+    {l:'€/m² médian',          v:fmt(med(pm2all),'€'),               s:'toutes transactions', tip:'La moitié des biens a été vendue en dessous de ce prix, l\'autre moitié au dessus.', c:'c-gold'},
+    {l:'Plafond achat',        v:fmt(pa,'€'),                        s:'= médiane €/m²',      tip:'Prix médian du marché. À ne pas dépasser pour acheter dans les conditions du marché courant.', c:'c-blue'},
+    {l:'Plafond vente',        v:fmt(pv,'€'),                        s:'= P90 €/m²',          tip:'90% des biens ont été vendus en dessous. C\'est le prix maximum pour avoir une bonne chance de vendre.', c:'c-red'},
+    {l:'Marge théorique',      v:mg!=null?mg+'%':'—',                s:'vente vs achat',      tip:'Écart entre plafond vente et plafond achat. Marge brute potentielle avant travaux et frais.', c:mg>20?'c-green':mg>10?'c-gold':''},
+    {l:'Prix médian total',    v:fmt(med(prix),'€'),                  s:`min: ${fmt(Math.min(...prix),'€')}`, tip:'Prix de vente médian (valeur foncière totale de la mutation).', c:''},
+    {l:'Surface médiane',      v:fmt(med(surfs),'m²'),               s:`moy: ${fmt(Math.round(avg(surfs)),'m²')}`, tip:'Surface bâtie médiane. Pour les terrains : surface de la parcelle.', c:''},
+    {l:'Nb communes',          v:communes.length,                    s:`${years.length} année${years.length>1?'s':''}`, tip:'Nombre de communes couvertes par les données chargées.', c:''},
+  ].map(s=>`<div class="sum-card">
+    <div class="sum-label">${s.l}<span class="tip" data-tip="${s.tip}">?</span></div>
+    <div class="sum-val ${s.c}">${s.v}</div>
+    <div class="sum-sub">${s.s}</div>
+  </div>`).join('');
+
+  renderTimeline(rows);
+  renderTypeCards(rows);
+  renderZones(rows);
+  renderDistrib(rows);
+}
+
+// ══════════════════════════════════════════════════════
+// TIMELINE
+// ══════════════════════════════════════════════════════
+function renderTimeline(rows) {
+  const byMonth = {};
+  rows.forEach(r=>{ if(r.ym) byMonth[r.ym]=(byMonth[r.ym]||0)+1; });
+  const keys = Object.keys(byMonth).sort();
+  if (!keys.length) return;
+  const maxV = Math.max(...Object.values(byMonth));
+  document.getElementById('tlChart').innerHTML = keys.map(k=>{
+    const h = Math.round(byMonth[k]/maxV*100);
+    return `<div class="tl-bar" style="height:${h}%" data-tip="${k} : ${byMonth[k]} vente${byMonth[k]>1?'s':''}"></div>`;
+  }).join('');
+  const lab = document.getElementById('tlLabels');
+  lab.innerHTML = `<span>${keys[0]}</span><span>${keys[Math.floor(keys.length/2)]||''}</span><span>${keys[keys.length-1]}</span>`;
+}
+
+// ══════════════════════════════════════════════════════
+// TYPE CARDS — cœur de l'application
+// ══════════════════════════════════════════════════════
+const TYPE_ORDER = ['Maison','Appartement','Terrain','Dépendance','Local industriel. commercial ou assimilé'];
+const TYPE_COLOR = {
+  'Maison':'var(--blue)',
+  'Appartement':'var(--gold)',
+  'Terrain':'var(--green)',
+  'Dépendance':'var(--purple)',
+  'Local industriel. commercial ou assimilé':'var(--red)',
+};
+
+function renderTypeCards(rows) {
+  // Regrouper par type
+  const byType = {};
+  rows.forEach(r=>{ if(!byType[r.type]) byType[r.type]=[]; byType[r.type].push(r); });
+
+  const types = TYPE_ORDER.filter(t=>byType[t]).concat(
+    Object.keys(byType).filter(t=>!TYPE_ORDER.includes(t))
+  );
+
+  document.getElementById('typeCards').innerHTML = types.map(type => {
+    const tr = byType[type];
+    const col = TYPE_COLOR[type] || 'var(--muted)';
+    const pm2all = tr.map(r=>r.pm2).filter(Boolean);
+    const pa = plafAchat(pm2all), pv = plafVente(pm2all), mg = margeTheo(pa,pv);
+    const isTerrain = type === 'Terrain';
+    const noSurf = type === 'Dépendance';
+
+    // ── Regrouper par typo × tranche ──
+    const groups = {};
+    tr.forEach(r => {
+      const typo = r.typo || '—';
+      const tranche = isTerrain
+        ? (r.trancheTerrain?.short || '—')
+        : (r.trancheBati?.short || '—');
+      const key = `${typo}||${tranche}`;
+      if (!groups[key]) groups[key] = {typo, tranche, rows:[]};
+      groups[key].rows.push(r);
+    });
+
+    // Trier : d'abord par typo (T2<T3<T4...) puis par tranche surface
+    const TRANCHE_ORDER_BATI = TRANCHES_BATI.map(t=>t.short);
+    const TRANCHE_ORDER_TERR = TRANCHES_TERRAIN.map(t=>t.short);
+    const trancheOrder = isTerrain ? TRANCHE_ORDER_TERR : TRANCHE_ORDER_BATI;
+
+    const sorted = Object.values(groups).sort((a,b)=>{
+      const ta = parseInt(a.typo.slice(1))||999;
+      const tb = parseInt(b.typo.slice(1))||999;
+      if (ta !== tb) return ta-tb;
+      return trancheOrder.indexOf(a.tranche) - trancheOrder.indexOf(b.tranche);
+    });
+
+    // Tableau rows
+    const tableRows = sorted.map(g => {
+      const pm2 = g.rows.map(r=>r.pm2).filter(Boolean);
+      if (!pm2.length) {
+        const vals = g.rows.map(r=>r.valeur).filter(Boolean);
+        return `<tr>
+          <td class="td-typo" style="color:${col}">${g.typo}</td>
+          <td class="td-tranche">${g.tranche}</td>
+          <td class="td-n">${g.rows.length}</td>
+          <td class="no-data" colspan="6">Surface non disponible dans DVF</td>
+        </tr>`;
+      }
+      const gpa = plafAchat(pm2), gpv = plafVente(pm2), gmg = margeTheo(gpa, gpv);
+      const few = pm2.length < 3;
+      const surfs = g.rows.map(r=>r.surfBati||r.effSurf).filter(Boolean);
+      return `<tr>
+        <td class="td-typo" style="color:${col}">${g.typo}</td>
+        <td class="td-tranche">${g.tranche}</td>
+        <td class="td-n">${g.rows.length}${few?'<span class="td-few"> ⚠ peu</span>':''}</td>
+        <td>${fmt(pct(pm2,10),'€')}</td>
+        <td>${fmt(med(pm2),'€')}</td>
+        <td>${fmt(pct(pm2,75),'€')}</td>
+        <td class="td-achat" style="color:var(--blue)">${fmt(gpa,'€')}</td>
+        <td class="td-vente" style="color:var(--red)">${fmt(gpv,'€')}</td>
+        <td class="td-marge ${gmg>20?'marge-pos':gmg!=null?'':'marge-zero'}">${gmg!=null?gmg+'%':'—'}</td>
+        <td style="color:var(--muted);font-size:10px">${fmt(med(surfs),'m²')}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="type-block">
+      <div class="type-block-hdr" style="border-left-color:${col}">
+        <div>
+          <div class="type-block-name" style="color:${col}">${type}</div>
+          <div class="type-block-count">${tr.length} BIEN${tr.length>1?'S':''} · ${pm2all.length} AVEC €/M²</div>
+        </div>
+        <div class="type-block-plafonds">
+          ${noSurf ? '<div style="color:var(--muted);font-size:11px">Surface non dispo DVF</div>' : `
+          <div class="plf-item">
+            <div class="plf-label">Plafond achat <span class="tip" data-tip="Médiane €/m² — prix du marché courant.&#10;50% des ventes en dessous.&#10;À ne pas dépasser pour acheter dans le marché.">?</span></div>
+            <div class="plf-val" style="color:var(--blue)">${fmt(pa,'€/m²')}</div>
+          </div>
+          <div class="plf-item">
+            <div class="plf-label">Plafond vente <span class="tip" data-tip="P90 €/m² — 90% des ventes en dessous.&#10;Prix max pour vendre avec bonne probabilité.&#10;Au-delà : le marché ne suit plus.">?</span></div>
+            <div class="plf-val" style="color:var(--red)">${fmt(pv,'€/m²')}</div>
+          </div>
+          <div class="plf-item">
+            <div class="plf-label">Marge théo. <span class="tip" data-tip="(Plafond vente - Plafond achat) / Plafond achat.&#10;Marge brute potentielle avant travaux et frais.">?</span></div>
+            <div class="plf-val ${mg>20?'c-green':mg>10?'c-gold':''}">${mg!=null?mg+'%':'—'}</div>
+          </div>`}
+        </div>
+      </div>
+      ${noSurf ? '' : `
+      <div class="tbl-wrap">
+        <table class="type-table">
+          <thead>
+            <tr>
+              <th>Typo <span class="tip" data-tip="Nombre de pièces principales&#10;(T3 = 3 pièces, T4 = 4 pièces…)">?</span></th>
+              <th>Surface <span class="tip" data-tip="Tranche de surface bâtie.&#10;Ex: 'Moyen' = 80 à 100 m²">?</span></th>
+              <th>Nb <span class="tip" data-tip="Nombre de biens vendus&#10;dans cette catégorie.&#10;⚠ moins de 3 = peu fiable">?</span></th>
+              <th>P10 €/m² <span class="tip" data-tip="10% des biens vendus en dessous.&#10;Bas de marché — biens décotés ou&#10;nécessitant des travaux importants.">?</span></th>
+              <th>Médiane €/m² <span class="tip" data-tip="Prix moyen du marché.&#10;50% des biens vendus en dessous,&#10;50% au dessus.">?</span></th>
+              <th>Q3 €/m² <span class="tip" data-tip="75% des biens vendus en dessous.&#10;Haut de la fourchette normale.">?</span></th>
+              <th>Plafond achat <span class="tip" data-tip="= Médiane €/m²&#10;Prix à ne pas dépasser pour acheter&#10;dans le marché courant et rester rentable.">?</span></th>
+              <th>Plafond vente <span class="tip" data-tip="= P90 €/m²&#10;90% des biens ont été vendus en dessous.&#10;Prix maximum pour vendre avec certitude.">?</span></th>
+              <th>Marge théo. <span class="tip" data-tip="Écart entre plafond vente et plafond achat.&#10;Marge brute potentielle avant travaux.&#10;À titre indicatif — hors frais et travaux.">?</span></th>
+              <th>Surf. méd. <span class="tip" data-tip="Surface médiane des biens&#10;dans cette catégorie.">?</span></th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>`}
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// ZONES
+// ══════════════════════════════════════════════════════
+function renderZones(rows) {
+  const byCommune = {};
+  rows.forEach(r=>{ if(!byCommune[r.commune]) byCommune[r.commune]=[]; byCommune[r.commune].push(r); });
+
+  const data = Object.entries(byCommune).map(([commune, cr])=>{
+    const pm2 = cr.map(r=>r.pm2).filter(Boolean);
+    const px = cr.map(r=>r.valeur).filter(Boolean);
+    const sf = cr.map(r=>r.effSurf).filter(Boolean);
+    const pa = plafAchat(pm2), pv = plafVente(pm2), mg = margeTheo(pa,pv);
+    return {commune, nb:cr.length, med:med(pm2), plafAchat:pa, plafVente:pv, marge:mg, prixMed:med(px), surfMed:med(sf)};
+  });
+
+  // Sort
+  data.sort((a,b)=>(b[S.sortCol]||0)-(a[S.sortCol]||0));
+
+  document.getElementById('bodyZones').innerHTML = data.map(d=>`<tr>
+    <td class="left" style="font-weight:600">${d.commune}</td>
+    <td>${d.nb}</td>
+    <td>${fmt(d.med,'€')}</td>
+    <td style="color:var(--blue);font-weight:600">${fmt(d.plafAchat,'€')}</td>
+    <td style="color:var(--red);font-weight:600">${fmt(d.plafVente,'€')}</td>
+    <td class="${d.marge>20?'c-green':d.marge>10?'c-gold':''}">${d.marge!=null?d.marge+'%':'—'}</td>
+    <td>${fmt(d.prixMed,'€')}</td>
+    <td>${fmt(d.surfMed,'m²')}</td>
+  </tr>`).join('');
+}
+
+function sortTbl(col) {
+  if (S.sortCol===col) S.sortDir *= -1;
+  else { S.sortCol=col; S.sortDir=-1; }
+  renderZones(S.filtered);
+}
+
+// ══════════════════════════════════════════════════════
+// DISTRIBUTIONS
+// ══════════════════════════════════════════════════════
+function renderDistrib(rows) {
+  const byType = {};
+  rows.forEach(r=>{if(!byType[r.type]) byType[r.type]=[]; byType[r.type].push(r);});
+
+  document.getElementById('distGrid').innerHTML = Object.entries(byType)
+    .filter(([,tr])=>tr.some(r=>r.pm2))
+    .map(([type, tr])=>{
+      const pm2 = tr.map(r=>r.pm2).filter(Boolean).sort((a,b)=>a-b);
+      if (!pm2.length) return '';
+      const col = TYPE_COLOR[type]||'var(--muted)';
+      const pv = plafVente(pm2);
+
+      const BINS = 16;
+      const minV = pm2[0], maxV = pm2[pm2.length-1];
+      const binW = (maxV-minV)/BINS||1;
+      const bins = Array(BINS).fill(0);
+      pm2.forEach(v=>{ const i=Math.min(Math.floor((v-minV)/binW),BINS-1); bins[i]++; });
+      const maxB = Math.max(...bins)||1;
+
+      const bars = bins.map((b,i)=>{
+        const lo = Math.round(minV+i*binW), hi = Math.round(lo+binW);
+        const above = pv && lo > pv;
+        return `<div class="hist-bar ${above?'above-plafond':''}" style="height:${Math.round(b/maxB*100)}%;background:${col}" data-tip="${lo.toLocaleString('fr')}–${hi.toLocaleString('fr')}€ : ${b} vente${b>1?'s':''}"></div>`;
+      }).join('');
+
+      const pa = plafAchat(pm2);
+      return `<div class="dist-card">
+        <div class="dist-title" style="color:${col}">${type} — ${tr.length} biens</div>
+        <div class="hist-wrap">${bars}</div>
+        <div class="hist-axis">
+          <span>${minV.toLocaleString('fr')}€</span>
+          <span style="color:var(--blue)">▲ achat ${pa?pa.toLocaleString('fr')+'€':''}</span>
+          <span style="color:var(--red)">▲ vente ${pv?pv.toLocaleString('fr')+'€':''}</span>
+          <span>${maxV.toLocaleString('fr')}€</span>
+        </div>
+        <div class="dist-stats">
+          <div class="dst"><span class="ds-k">P10</span><span class="ds-v">${fmt(pct(pm2,10),'€')}</span></div>
+          <div class="dst"><span class="ds-k">Médiane</span><span class="ds-v">${fmt(med(pm2),'€')}</span></div>
+          <div class="dst"><span class="ds-k">P90</span><span class="ds-v">${fmt(pct(pm2,90),'€')}</span></div>
+          <div class="dst"><span class="ds-k">Max</span><span class="ds-v">${fmt(Math.max(...pm2),'€')}</span></div>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// EXPORTS
+// ══════════════════════════════════════════════════════
+function csvRow(arr) {
+  return arr.map(v => {
+    const s = v==null ? '' : String(v);
+    return s.includes(';')||s.includes('"') ? `"${s.replace(/"/g,'""')}"` : s;
+  }).join(';');
+}
+
+function download(filename, content, mime='text/csv;charset=utf-8') {
+  const blob = new Blob(['\uFEFF'+content], {type:mime});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+// CSV TRANSACTIONS PROPRE — une ligne par bien dans chaque mutation
+function exportClean() {
+  const hdrs = ['id_mutation','date','commune','code_postal','section','adresse',
+    'type_bien','nature_mutation','prix_total_eur','surface_bati_m2','surface_terrain_m2',
+    'prix_m2','nb_pieces','typo','tranche_surface','tranche_terrain',
+    'annee','mois','notes'];
+  const rows = [csvRow(hdrs)];
+  S.filtered.forEach(r=>{
+    rows.push(csvRow([
+      r.idMut, r.dateRaw, r.commune, r.cp, r.section, r.adresse,
+      r.type, r.nature, r.valeur,
+      r.surfBati||'', r.surfTerr||'',
+      r.pm2||'', r.pieces||'', r.typo||'',
+      r.trancheBati?.label||'', r.trancheTerrain?.label||'',
+      r.year||'', r.month||'', r.note||'',
+    ]));
+  });
+  download('dvf_transactions_propre.csv', rows.join('\n'));
+}
+
+// CSV SYNTHÈSE MARCHÉ — une ligne par commune · type · typo · tranche
+function exportSynthese() {
+  const hdrs = ['commune','type','typo','tranche_surface','nb_biens',
+    'pm2_p10','pm2_mediane','pm2_q3','pm2_p90','pm2_max',
+    'plafond_achat_eur_m2','plafond_vente_eur_m2','marge_theorique_pct',
+    'prix_median_eur','surface_mediane_m2'];
+  const rows = [csvRow(hdrs)];
+
+  // Grouper
+  const groups = {};
+  S.filtered.forEach(r=>{
+    const key = `${r.commune}||${r.type}||${r.typo||'—'}||${r.trancheBati?.short||r.trancheTerrain?.short||'—'}`;
+    if (!groups[key]) groups[key]={commune:r.commune,type:r.type,typo:r.typo||'—',tranche:r.trancheBati?.short||r.trancheTerrain?.short||'—',rows:[]};
+    groups[key].rows.push(r);
+  });
+
+  Object.values(groups).forEach(g=>{
+    const pm2 = g.rows.map(r=>r.pm2).filter(Boolean);
+    const px = g.rows.map(r=>r.valeur).filter(Boolean);
+    const sf = g.rows.map(r=>r.effSurf).filter(Boolean);
+    const pa = plafAchat(pm2), pv = plafVente(pm2), mg = margeTheo(pa,pv);
+    rows.push(csvRow([
+      g.commune, g.type, g.typo, g.tranche, g.rows.length,
+      pct(pm2,10)||'', med(pm2)||'', pct(pm2,75)||'', pct(pm2,90)||'', Math.max(...pm2)||'',
+      pa||'', pv||'', mg!=null?mg:'',
+      med(px)||'', med(sf)||'',
+    ]));
+  });
+  download('dvf_synthese_marche.csv', rows.join('\n'));
+}
+
+// JSON SUPABASE
+function exportJSON() {
+  const payload = buildJSON();
+  download('dvf_supabase.json', JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
+}
+
+function previewJSON() {
+  const pre = document.getElementById('jsonPre');
+  if (pre.style.display==='none') {
+    pre.textContent = JSON.stringify(buildJSON(), null, 2).slice(0,8000)+'…';
+    pre.style.display='block';
+  } else pre.style.display='none';
+}
+
+function buildJSON() {
+  const transactions = S.filtered.map(r=>({
+    id_mutation:r.idMut, date:r.dateRaw, commune:r.commune, cp:r.cp,
+    section:r.section, adresse:r.adresse,
+    type_bien:r.type, nature:r.nature, valeur:r.valeur,
+    surface_bati:r.surfBati, surface_terrain:r.surfTerr, prix_m2:r.pm2,
+    nb_pieces:r.pieces, typo:r.typo,
+    tranche_surface:r.trancheBati?.label, tranche_terrain:r.trancheTerrain?.label,
+    annee:r.year, mois:r.month, note:r.note||null,
+  }));
+
+  const plafonds = [];
+  const byType = {};
+  S.filtered.forEach(r=>{ if(!byType[r.type]) byType[r.type]=[]; byType[r.type].push(r); });
+  Object.entries(byType).forEach(([type,tr])=>{
+    const byCommune = {};
+    tr.forEach(r=>{ if(!byCommune[r.commune]) byCommune[r.commune]=[]; byCommune[r.commune].push(r); });
+    Object.entries(byCommune).forEach(([commune,cr])=>{
+      const pm2=cr.map(r=>r.pm2).filter(Boolean);
+      const pa=plafAchat(pm2), pv=plafVente(pm2), mg=margeTheo(pa,pv);
+      plafonds.push({commune,type_bien:type,nb_transactions:cr.length,
+        pm2_mediane:med(pm2), pm2_p10:pct(pm2,10), pm2_p90:pct(pm2,90),
+        plafond_achat:pa, plafond_vente:pv, marge_theorique_pct:mg});
+    });
+  });
+
+  return {
+    generated: new Date().toISOString(),
+    source: 'DVF Analyzer v5 — SuPrealty',
+    total_biens: transactions.length,
+    transactions,
+    plafonds_marche: plafonds,
+  };
+}
+
+function setStatus(txt) { document.getElementById('status').textContent = txt; }
+</script>
+</body>
+</html>
